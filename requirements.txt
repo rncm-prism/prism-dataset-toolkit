@@ -1,0 +1,6 @@
+librosa>=0.4.3
+audiomentations
+natsort
+pydub
+soundfile
+tensorflow

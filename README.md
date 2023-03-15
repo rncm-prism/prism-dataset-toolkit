@@ -2,13 +2,13 @@
 
 A Python toolkit for building and manipulating audio data pipelines for TensorFlow.
 
-Developed by PRiSM for use with neural synthesis models such as [PRiSM SampleRNN](https://github.com/rncm-prism/prism-samplernn).
+Developed by PRiSM for use with neural audio synthesis models such as [PRiSM SampleRNN](https://github.com/rncm-prism/prism-samplernn).
 
 ## Installation
 
 Install with `pip install -r ./requirements.txt`.
 
-We recommend running the tools in an [Anaconda](https://www.anaconda.com/) environment.
+We highly recommend running the tools in a virtual environment, or with [Anaconda](https://www.anaconda.com/).
 
 ## Usage
 
@@ -16,7 +16,7 @@ The repository provides a library of tools that can be integrated into a TensorF
 
 Standalone python scripts are also provided for generating input data.
 
-**N.B**: Currently the toolkit is restricted to mono audio files, in WAV format.
+**N.B**: Currently the toolkit is restricted to _mono_ audio files, in WAV format.
 
 ### Basic Example
 
@@ -41,14 +41,15 @@ pdt.create_chunks(input_wav, output_dir, chunk_length=8000, overlap=4000)
 # The following function builds a TensorFlow data pipeline ncorporating functions
 # from the toolkit. The first argument `data_dir` is the path to the directory
 # of chunks we jusr created.
-def get_dataset(data_dir, num_epochs=1, batch_size=32, shuffle=True):
+def get_dataset(data_dir, num_epochs=1, batch_size=32, seq_len, shuffle=True):
     files = pdt.find_files(data_dir)
     dataset = pdt.load(files, shuffle)
     dataset = pdt.augment(dataset)
     drop_remainder = True
     dataset = dataset.repeat(num_epochs).batch(batch_size, drop_remainder)
-    dataset = pdt.pad(dataset)
-    dataset = pdt.get_cross_batch_sequence(dataset)
+    target_offset = 64
+    dataset = pdt.pad(dataset, batch_size, seq_len, target_offset)
+    dataset = pdt.get_cross_batch_sequence(dataset, batch_size, seq_len, target_offset)
 ```
 
 ## Scripts
@@ -102,12 +103,14 @@ Used internally by the `chunk_audio.py` script.
 
 | Name                       | Description           | Default Value  | Required?   |
 | ---------------------------|-----------------------|----------------| -----------|
-| `files`                    | Path to the generated .wav file.          | `None`           | Yes        |
-| `shuffle`                  | Path to a saved checkpoint for the model.           | `None`           | Yes        |
+| `input_file`              | Path to the input .wav file to be chunked.          | `None`           | Yes        |
+| `output_dir`          | Path to the directory to contain the chunks. If the directory does not already exist it will be created.           | `None`           | Yes        |
+| `chunk_length`              | Chunk length (defaults to 8000ms).          | 8000           | No        |
+| `overlap`              | Overlap between consecutive chunks (defaults to 0ms, no overlap). | 0         | No        |
 
 #### _Returns_
 
-A Dataset.
+None.
 
 ### `load`
 
@@ -117,8 +120,8 @@ Generator for loading audio into a data pipeline.
 
 | Name                       | Description           | Default Value  | Required?   |
 | ---------------------------|-----------------------|----------------| -----------|
-| `files`                    | Path to the generated .wav file.          | `None`           | Yes        |
-| `shuffle`                  | Path to a saved checkpoint for the model.           | `None`           | Yes        |
+| `files`                    | List of path strings to the input WAV files.          | `None`           | Yes        |
+| `shuffle`                  | PWhether to shuffle the list.           | `True`           | No        |
 
 #### _Returns_
 
@@ -126,16 +129,16 @@ A Dataset.
 
 ### `pad`
 
-Zero pads an audio buffer (tensor).
+Zero pads a batched dataset of audio buffers (tensors).
 
 #### _Parameters_
 
 | Name                       | Description           | Default Value  | Required?   |
 | ---------------------------|-----------------------|----------------| -----------|
-| `dataset`                  | Input dataset.          | `None`           | Yes        |
+| `dataset`                  | Input dataset (batched).          | `None`           | Yes        |
 | `batch_size`               | Input dataset batch size.            | `None`           | Yes        |
-| `seq_len`                  | Length of the subsequence.          | 8000           | No        |
-| `overlap`                  | Overlap between consecutive chunks. | 0         | No        |
+| `seq_len`                  | Length of the subsequence (for cross-batch statefulness).          | `None`          | Yes        |
+| `amount`                   | Number of zeroes to pad with. | `None`         | Yes        |
 
 #### _Returns_
 
@@ -151,7 +154,7 @@ Applies augmentations to an audio buffer, using the [audiomentations](https://gi
 - `Shift`
 - `Reverse`
 
-Augmentations are specified in JSON format as follows:
+Augmentations are specified as a JSON array, where each element is an array taking the form `[ augmentationName, parameters ]`:
 
 ```json
 [
@@ -203,7 +206,7 @@ For the full list of available augmentations see the [audiomentations documentat
 | Name                       | Description           | Default Value  | Required?   |
 | ---------------------------|-----------------------|----------------| -----------|
 | `dataset`              | Input dataset.          | `None`           | Yes        |
-| `augmentations`          | List of augmentations to apply.           | `None`           | Yes        |
+| `augmentations`          | List of augmentations to apply.           | See above           | No        |
 
 #### _Returns_
 
@@ -217,11 +220,11 @@ Generator for obtaining batch slices, useful for implementing the [cross batch s
 
 | Name                       | Description           | Default Value  | Required?   |
 | ---------------------------|-----------------------|----------------| -----------|
-| `dataset`                  | Input dataset.          | `None`           | Yes        |
+| `dataset`                  | Input dataset (batched).          | `None`           | Yes        |
 | `batch_size`               | Input dataset batch size.           | `None`           | Yes        |
-| `seq_len`                  | Length of the subsequence.          | 8000           | No        |
-| `overlap`                  | Overlap between consecutive chunks. | 0         | No        |
+| `seq_len`                  | Length of the subsequence.          | `None`           | Yes        |
+| `target_offset`                  | Offset of the target. | `None`         | Yes        |
 
 #### _Returns_
 
-A Dataset.
+A Dataset. Each yielded element is a Numpy array of the form `array(X, y)`, where `X` is the input data for the network, and `y` is the offset target.

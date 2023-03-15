@@ -17,19 +17,19 @@ def load(files, shuffle):
     dataset = tf.data.Dataset.from_generator(
         lambda: load_audio(files, shuffle=shuffle),
         output_types=tf.float32,
-        output_shapes=((None, 1))
+        #output_shapes=((None, 1))
     )
     return dataset
 
 
-def pad_batch(batch, batch_size, seq_len, overlap):
+def pad_batch(batch, batch_size, seq_len, amount):
     num_samps = ( int(np.floor(len(batch[0]) / float(seq_len))) * seq_len )
-    zeros = np.zeros([batch_size, overlap, 1], dtype='float32')
-    return tf.concat([zeros, batch[:, :num_samps, :]], axis=1)
+    zeros = np.zeros([batch_size, amount], dtype='float32')
+    return tf.concat([zeros, batch[:, :num_samps]], axis=1)
 
-def pad(dataset, batch_size, seq_len, overlap):
+def pad(dataset, batch_size, seq_len, amount):
     dataset = dataset.map(lambda batch: tf.py_function(
-        func=pad_batch, inp=[batch, batch_size, seq_len, overlap], Tout=tf.float32
+        func=pad_batch, inp=[batch, batch_size, seq_len, amount], Tout=tf.float32
     ))
     return dataset
 
@@ -47,8 +47,8 @@ def get_cross_batch_sequence(dataset, batch_size, seq_len, overlap):
         lambda: get_batch_subseq(dataset, batch_size, seq_len, overlap),
         output_types=(tf.int32, tf.int32),
         output_shapes=(
-            (batch_size, seq_len + overlap, 1),
-            (batch_size, seq_len, 1)))
+            (batch_size, seq_len + overlap),
+            (batch_size, seq_len)))
 
 
 def print_dataset(dataset):

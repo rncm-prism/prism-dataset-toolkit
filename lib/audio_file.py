@@ -26,7 +26,8 @@ def load_audio(files, shuffle=True):
         (audio, _) = librosa.load(filename, sr=None, mono=True)
         #audio = audio.reshape(-1, 1)
         print("Loading corpus entry {}".format(filename))
-        yield audio
+        #yield audio
+        yield np.array(audio)
 
 def write_wav(path, audio, sample_rate):
     sf.write(path, np.array(audio), sample_rate)

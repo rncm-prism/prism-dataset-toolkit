@@ -21,11 +21,11 @@ def compose_augmentations(augmentations):
         for (method_name, kwargs) in augs])
 
 
-def augment(dataset, augmentations=DEFAULT_AUGMENTATIONS):
+def augment(dataset, augmentations=DEFAULT_AUGMENTATIONS, sample_rate=16000):
     aug = compose_augmentations(augmentations)
 
     def map_fn(samples):
-        return aug(samples)
+        return aug(np.array(samples), sample_rate)
 
     return dataset.map(lambda samples: tf.py_function(
         func=map_fn, inp=[samples], Tout=tf.float32

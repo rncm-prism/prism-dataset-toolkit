@@ -38,18 +38,26 @@ pdt.create_chunks(input_wav, output_dir, chunk_length=8000, overlap=4000)
 
 # If everything went to plan our source chunk directory will now be in the sepcified place...
 
-# The following function builds a TensorFlow data pipeline ncorporating functions
+# The following function builds a TensorFlow data pipeline incorporating functions
 # from the toolkit. The first argument `data_dir` is the path to the directory
-# of chunks we jusr created.
-def get_dataset(data_dir, num_epochs=1, batch_size=32, seq_len, shuffle=True):
+# of chunks we just created.
+def get_dataset(data_dir, num_epochs=1, batch_size=32, seq_len=1024, shuffle=True):
+    # Obtain the list of filenames from the
+    # data dir and load them into the pipeline...
     files = pdt.find_files(data_dir)
     dataset = pdt.load(files, shuffle)
+    # Apply some augmentations...
     dataset = pdt.augment(dataset)
+    # The following step is standard for a data pieline, batching
+    # the loaded audio and setting the number of epochs...
     drop_remainder = True
     dataset = dataset.repeat(num_epochs).batch(batch_size, drop_remainder)
+    # Add zero padding to the start of each batch...
     target_offset = 64
     dataset = pdt.pad(dataset, batch_size, seq_len, target_offset)
-    dataset = pdt.get_cross_batch_sequence(dataset, batch_size, seq_len, target_offset)
+    # Finally get the (X, y) batch subsequnces to be passed
+    # as the direct input to the network...
+    return pdt.get_cross_batch_sequence(dataset, batch_size, seq_len, target_offset)
 ```
 
 ## Scripts

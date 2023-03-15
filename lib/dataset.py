@@ -1,7 +1,17 @@
+import os
+import fnmatch
 import numpy as np
 import tensorflow as tf
 from lib import load_audio 
 
+
+def find_files(directory, pattern='*.wav'):
+    '''Recursively finds all files matching the pattern.'''
+    files = []
+    for root, dirnames, filenames in os.walk(directory):
+        for filename in fnmatch.filter(filenames, pattern):
+            files.append(os.path.join(root, filename))
+    return files
 
 def load(files, shuffle):
     dataset = tf.data.Dataset.from_generator(
@@ -39,3 +49,8 @@ def get_cross_batch_sequence(dataset, batch_size, seq_len, overlap):
         output_shapes=(
             (batch_size, seq_len + overlap, 1),
             (batch_size, seq_len, 1)))
+
+
+def print_dataset(dataset):
+    for elt in dataset.as_numpy_iterator():
+        print(elt)

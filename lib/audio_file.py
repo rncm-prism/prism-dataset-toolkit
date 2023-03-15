@@ -24,7 +24,7 @@ def load_audio(files, shuffle=True):
     print(f'Dataset length: {len(files)} files.')
     for filename in yield_from_list(files, shuffle=shuffle):
         (audio, _) = librosa.load(filename, sr=None, mono=True)
-        audio = audio.reshape(-1, 1)
+        #audio = audio.reshape(-1, 1)
         print("Loading corpus entry {}".format(filename))
         yield audio
 

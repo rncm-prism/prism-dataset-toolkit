@@ -24,9 +24,9 @@ def check_boolean(value):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_dir', type=str, help='Path to directory of files to concatenate')
-    parser.add_argument('--output_path', type=str, help='Path for the output file')
-    parser.add_argument('--shuffle', type=check_boolean, default=True, help='Whether to shuffle files before concatenating')
+    parser.add_argument('--input_dir', type=str, help='Path to the directory of files to concatenate.')
+    parser.add_argument('--output_path', type=str, help='Path for the output file.')
+    parser.add_argument('--shuffle', type=check_boolean, default=True, help='Whether to shuffle files before concatenating.')
     return parser.parse_args()
 
 def find_wav_files(directory):
